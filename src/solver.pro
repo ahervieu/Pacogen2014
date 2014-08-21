@@ -19,8 +19,16 @@ run:-
 save:-save_program('/Users/Aymeric/Documents/Thèse/Expériences Pacogen/runtime/Pacogen.sav').
 
 user:runtime_entry(start) :-
-        openfile(PairInformations,Attributes,Features,ConstraintModel,MatrixSize,ModelName,Labeling,Minimization,AllDif,Sort,SymetricBreaking,FileName),
-solverMin(Features,ConstraintModel,MatrixSize,Labeling,ModelName,FileName).
+       openfile2(Features,ConstraintModel,Labeling,MatrixSize,ModelName,FileName),
+       solverMin(Features,ConstraintModel,MatrixSize,Labeling,ModelName,FileName).
+
+saveCurrentBestsol(Matrix,MatrixSize,Labeling,ModelName,FileName,Time):-
+        retractall(bestSol(_,_,_,_,_,_)),
+        assert(bestSol(Matrix,MatrixSize,Labeling,ModelName,FileName,Time)).
+
+getBestSol(Matrix,MatrixSize,Labeling,ModelName,FileName,Time):-
+        bestSol(Matrix,MatrixSize,Labeling,ModelName,FileName,Time).
+        
 
 solver(Features,ConstraintModel,MatrixSize,Labeling,ModelName,FileName):-
          statistics(runtime, [T0|_]),
@@ -77,8 +85,6 @@ solverMin(Features,ConstraintModel,MatrixSize,Labeling,ModelName,FileName):-
         statistics(runtime, [T1|_]),
         T is T1 - T0,
         print(T),println(' ms'),
-        printMatrixScreen(Matrix),
-         writeMatrixFile('res.csv',Matrix),
         writeStat('stats.txt',FileName,ModelName,Max,T,Labeling),!,
         solverMin2(Features,ConstraintModel,Max,Labeling,ModelName,FileName,T).
 
@@ -87,7 +93,7 @@ solverMin2(Features,ConstraintModel,MatrixSize2,Labeling,ModelName,FileName,Time
         println('other resolution'),
         print('MatirxInput : '),        println(MatrixSize2),
         print('MatrixInputResoltion : '),        println(MatrixSize),
-        print('Allocated Time (*4)'),        println(TimeOut),
+        print('Allocated Time (*10)'),        println(TimeOut),
         statistics(runtime, [T0|_]),
         Features = [Root|_],
         borneRec(Features),
@@ -101,7 +107,7 @@ solverMin2(Features,ConstraintModel,MatrixSize2,Labeling,ModelName,FileName,Time
         (foreach(P,PwCtr),
         fromto([],In,RkLst,RkLst), 
         param(Matrix)
-        do (P <-getConstraint(Matrix,Ctr,Rank),
+        do (P <-getConstraint(Matrix,Ctr,Rank), 
             callRec(Ctr),
             RkLst =[Rank|In])),
         domain(RkLst,1,MatrixSize),
@@ -110,14 +116,13 @@ solverMin2(Features,ConstraintModel,MatrixSize2,Labeling,ModelName,FileName,Time
         Time is TimeOut * 10,
         labeling([time_out(Time,F)|Labeling],RkLst),!,
         ( (F = time_out) ->
-          writeStat('statsF.txt',FileName,ModelName,MatrixSize2,TimeOut,Labeling) ;
+               writeStat('statsL.txt',FileName,ModelName,MatrixSize2,TimeOut,Labeling)
+          ;
         print('solution size'),
         println(Max), 
         statistics(runtime, [T1|_]),
         T is T1 - T0,
         print(T),println(' ms'),
-           printMatrixScreen(Matrix),
-         writeMatrixFile('res.csv',Matrix),
         writeStat('stats.txt',FileName,ModelName,Max,T,Labeling),
         solverMin2(Features,ConstraintModel,Max,Labeling,ModelName,FileName,T)).
 
